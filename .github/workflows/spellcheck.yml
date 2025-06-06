@@ -1,54 +1,39 @@
-name: Spell Check with PR Comment
+name: Auto Fix Spelling and Create PR
 
 on:
   push:
     paths:
       - '**.md'
-  pull_request:
-    paths:
-      - '**.md'
 
 jobs:
-  check-spelling:
+  auto-fix-spelling:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # จำเป็นต้องดึงประวัติเต็ม เพื่อ push branch ใหม่
 
       - name: Install codespell
         run: pip install codespell
 
-      - name: Run codespell and save output
-        id: spellcheck
+      - name: Fix spelling mistakes
         run: |
-          codespell . > result.txt || true
-          cat result.txt
-        continue-on-error: true
+          codespell -w .
 
-      - name: Comment spellcheck results on PR
-        if: ${{ github.event_name == 'pull_request' }}
-        uses: actions/github-script@v6
+      - name: Commit fixed files
+        uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require('fs');
-            const result = fs.readFileSync('result.txt', 'utf8').trim();
+          commit_message: Fix spelling mistakes by codespell
+          branch: spelling-fixes
+          push_options: '--force' # กรณี branch นี้มีอยู่แล้วจะ force push ทับ
 
-            if (!result) {
-              // ไม่มีคำผิด
-              return github.rest.issues.createComment({
-                issue_number: context.payload.pull_request.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: '✅ ไม่มีคำสะกดผิดใน Markdown files ครับ!'
-              });
-            } else {
-              // มีคำผิด แจ้งรายละเอียด
-              const commentBody = `⚠️ พบคำสะกดผิดใน Markdown files:\n\n` + 
-                '```\n' + result + '\n```';
-              return github.rest.issues.createComment({
-                issue_number: context.payload.pull_request.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: commentBody
-              });
-            }
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: Fix spelling mistakes by codespell
+          branch: spelling-fixes
+          title: Fix spelling mistakes by codespell
+          body: This PR fixes spelling mistakes detected by codespell.
+          draft: false
