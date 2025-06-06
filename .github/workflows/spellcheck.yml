@@ -1,6 +1,9 @@
 name: Spell Check with PR Comment
 
 on:
+  push:
+    paths:
+      - '**.md'
   pull_request:
     paths:
       - '**.md'
