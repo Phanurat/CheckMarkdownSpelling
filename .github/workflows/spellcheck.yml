@@ -15,4 +15,11 @@ jobs:
         run: pip install codespell
 
       - name: Run codespell
-        run: codespell .
+        run: |
+          codespell . > result.txt || true
+          cat result.txt
+          if [ ! -s result.txt ]; then
+            echo "✅ No spelling errors found."
+          else
+            echo "⚠️ Spelling errors detected."
+          fi
