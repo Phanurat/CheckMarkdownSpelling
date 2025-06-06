@@ -20,18 +20,23 @@ jobs:
       - name: Fix spelling mistakes
         run: codespell -w .
 
-      - name: Setup spelling-fixes branch
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Create or switch to spelling-fixes branch
         run: |
           git fetch origin
-          git checkout -b spelling-fixes || git checkout spelling-fixes
+          git checkout -B spelling-fixes
 
-      - name: Commit fixed files
-        uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          commit_message: Fix spelling mistakes by codespell
-          branch: spelling-fixes
-          push_options: '--force'
-          token: ${{ secrets.PERSONAL_TOKEN }}
+      - name: Commit and push changes
+        env:
+          TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+        run: |
+          git add .
+          git commit -m "Fix spelling mistakes by codespell" || echo "Nothing to commit"
+          git push https://x-access-token:${TOKEN}@github.com/${{ github.repository }} spelling-fixes --force
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
