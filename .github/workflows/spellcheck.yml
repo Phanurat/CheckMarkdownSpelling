@@ -36,7 +36,8 @@ jobs:
         run: |
           git add .
           git commit -m "Fix spelling mistakes by codespell" || echo "Nothing to commit"
-          git push https://x-access-token:${TOKEN}@github.com/${{ github.repository }} spelling-fixes --force
+          git remote set-url origin https://x-access-token:${TOKEN}@github.com/${{ github.repository }}
+          git push origin spelling-fixes --force
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
