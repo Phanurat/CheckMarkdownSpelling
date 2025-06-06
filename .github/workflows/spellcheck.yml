@@ -12,21 +12,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # จำเป็นต้องดึงประวัติเต็ม เพื่อ push branch ใหม่
+          fetch-depth: 0
 
       - name: Install codespell
         run: pip install codespell
 
       - name: Fix spelling mistakes
+        run: codespell -w .
+
+      - name: Setup spelling-fixes branch
         run: |
-          codespell -w .
+          git fetch origin
+          git checkout -b spelling-fixes || git checkout spelling-fixes
 
       - name: Commit fixed files
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: Fix spelling mistakes by codespell
           branch: spelling-fixes
-          push_options: '--force' # กรณี branch นี้มีอยู่แล้วจะ force push ทับ
+          push_options: '--force'
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
