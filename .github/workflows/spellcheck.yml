@@ -1,7 +1,7 @@
-name: Spell Check
+name: Spell Check with PR Comment
 
 on:
-  push:
+  pull_request:
     paths:
       - '**.md'
 
@@ -14,12 +14,38 @@ jobs:
       - name: Install codespell
         run: pip install codespell
 
-      - name: Run codespell
+      - name: Run codespell and save output
+        id: spellcheck
         run: |
           codespell . > result.txt || true
           cat result.txt
-          if [ ! -s result.txt ]; then
-            echo "✅ No spelling errors found."
-          else
-            echo "⚠️ Spelling errors detected."
-          fi
+        continue-on-error: true
+
+      - name: Comment spellcheck results on PR
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const result = fs.readFileSync('result.txt', 'utf8').trim();
+
+            if (!result) {
+              // ไม่มีคำผิด
+              return github.rest.issues.createComment({
+                issue_number: context.payload.pull_request.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '✅ ไม่มีคำสะกดผิดใน Markdown files ครับ!'
+              });
+            } else {
+              // มีคำผิด แจ้งรายละเอียด
+              const commentBody = `⚠️ พบคำสะกดผิดใน Markdown files:\n\n` + 
+                '```\n' + result + '\n```';
+              return github.rest.issues.createComment({
+                issue_number: context.payload.pull_request.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: commentBody
+              });
+            }
